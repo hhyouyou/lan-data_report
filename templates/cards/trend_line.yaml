@@ -1,0 +1,26 @@
+id: trend_line
+kind: card
+title: 趋势折线图
+description: 单指标随时间的趋势。按报表规范，时间趋势必须用折线。
+tags: [趋势, line]
+variables:
+  - { name: metric, label: 指标, required: true, example: gmv }
+  - { name: metric_label, label: 指标名称, required: true, example: GMV }
+  - { name: period, label: 时间范围, required: false, default: last_30d, options: [last_7d, last_30d, this_month, last_month] }
+  - { name: width, label: 卡片宽度(栅格), required: false, default: "12" }
+body: |
+  title: "{metric_label}趋势"
+  spec:
+    metrics: ["{metric}"]
+    dimensions: [order_date]
+    filters:
+      - type: time
+        dimension: order_date
+        range: { type: relative, value: "{period}" }
+        grain: day
+    order_by: [{ by: order_date, dir: asc }]
+  visualization:
+    kind: line
+    x: order_date
+    y: ["{metric}"]
+  layout: { x: 0, y: 0, w: {width}, h: 4 }

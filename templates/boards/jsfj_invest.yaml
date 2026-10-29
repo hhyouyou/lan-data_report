@@ -1,0 +1,124 @@
+id: jsfj_invest
+kind: dashboard
+title: 江苏投资与消费专题
+description: 投资与消费专题：固定资产投资、社零、财政收支、用电量、房地产投资的 2024 年剖面与长趋势（财政 1978 起、用电 2005 起）。末尾的 GDP×用电量散点用平均电耗线解释城市间的能耗强度差异。
+tags: [江苏, 投资, 消费, 财政, 能源]
+variables:
+  - { name: title, label: 看板标题, required: true, example: 江苏投资与消费专题 }
+body: |
+  title: "{title}"
+  status: draft
+  version: 1
+  grid: { cols: 12, rowHeight: 78 }
+  filters: []
+  cards:
+    - id: c_kpi_inv
+      title: "固投增速（%）"
+      spec: { metrics: [fixed_investment_growth] }
+      visualization: { kind: kpi }
+      layout: { x: 0, y: 0, w: 3, h: 2 }
+
+    - id: c_kpi_retail
+      title: "社零总额（亿元）"
+      spec: { metrics: [retail_sales] }
+      visualization: { kind: kpi }
+      layout: { x: 3, y: 0, w: 3, h: 2 }
+
+    - id: c_kpi_fiscal
+      title: "财政收入（亿元）"
+      spec: { metrics: [fiscal_revenue] }
+      visualization: { kind: kpi }
+      layout: { x: 6, y: 0, w: 3, h: 2 }
+
+    - id: c_kpi_elec
+      title: "用电量（亿千瓦时）"
+      spec: { metrics: [electricity] }
+      visualization: { kind: kpi }
+      layout: { x: 9, y: 0, w: 3, h: 2 }
+
+    - id: c_inv_trend
+      title: "固定资产投资额趋势（1978–2017，亿元）"
+      spec:
+        metrics: [fixed_investment]
+        dimensions: [stat_year]
+        order_by: [{ by: stat_year, dir: asc }]
+      visualization: { kind: line, x: stat_year, y: [fixed_investment] }
+      layout: { x: 0, y: 2, w: 12, h: 5 }
+
+    - id: c_retail
+      title: "各市社会消费品零售总额（亿元）"
+      spec:
+        metrics: [retail_sales_city]
+        dimensions: [region]
+        order_by: [{ by: retail_sales_city, dir: desc }]
+        limit: 13
+      visualization: { kind: bar_h, y: [retail_sales_city] }
+      layout: { x: 0, y: 7, w: 6, h: 6 }
+
+    - id: c_elec
+      title: "各市全社会用电量（亿千瓦时）"
+      spec:
+        metrics: [electricity_city]
+        dimensions: [region]
+        order_by: [{ by: electricity_city, dir: desc }]
+        limit: 13
+      visualization: { kind: bar_h, y: [electricity_city] }
+      layout: { x: 6, y: 7, w: 6, h: 6 }
+
+    - id: c_fiscal
+      title: "各市财政自给率（收入/支出）"
+      spec:
+        metrics: [fiscal_self_sufficiency_city]
+        dimensions: [region]
+        order_by: [{ by: fiscal_self_sufficiency_city, dir: desc }]
+        limit: 13
+      visualization: { kind: bar_h, y: [fiscal_self_sufficiency_city] }
+      layout: { x: 0, y: 13, w: 6, h: 6 }
+
+    - id: c_realestate
+      title: "各市房地产开发投资（亿元）"
+      spec:
+        metrics: [realestate_invest_city]
+        dimensions: [region]
+        order_by: [{ by: realestate_invest_city, dir: desc }]
+        limit: 13
+      visualization: { kind: bar_h, y: [realestate_invest_city] }
+      layout: { x: 6, y: 13, w: 6, h: 6 }
+
+    - id: c_retail_pc
+      title: "各市人均社零（元/人）"
+      spec:
+        metrics: [retail_per_capita_city]
+        dimensions: [region]
+        order_by: [{ by: retail_per_capita_city, dir: desc }]
+        limit: 13
+      visualization: { kind: bar_h, y: [retail_per_capita_city] }
+      layout: { x: 0, y: 19, w: 12, h: 5 }
+
+    - id: c_fiscal_trend
+      title: "财政收支趋势（1978–2024，亿元）"
+      spec:
+        metrics: [fiscal_revenue, fiscal_expenditure]
+        dimensions: [stat_year]
+        order_by: [{ by: stat_year, dir: asc }]
+      visualization: { kind: line, x: stat_year, y: [fiscal_revenue, fiscal_expenditure] }
+      layout: { x: 0, y: 24, w: 6, h: 5 }
+
+    - id: c_elec_trend
+      title: "全社会用电量趋势（2005–2024，亿千瓦时）"
+      spec:
+        metrics: [electricity]
+        dimensions: [stat_year]
+        order_by: [{ by: stat_year, dir: asc }]
+      visualization: { kind: line, x: stat_year, y: [electricity] }
+      layout: { x: 6, y: 24, w: 6, h: 5 }
+
+    - id: c_elec_scatter
+      title: "各市 GDP × 用电量（2024，亿元 / 亿千瓦时）｜虚线上方＝单位 GDP 电耗更高"
+      spec:
+        metrics: [gdp_city, electricity_city]
+        dimensions: [region, region_group]
+        limit: 13
+        viz_hint: scatter
+      visualization: { kind: scatter, ref_line: avg }
+      layout: { x: 0, y: 29, w: 12, h: 7 }

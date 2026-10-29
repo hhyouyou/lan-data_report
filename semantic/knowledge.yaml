@@ -1,0 +1,115 @@
+version: 1
+model: ecommerce
+
+# 知识资产：语义层回答「怎么算」，这里回答「为什么这么算、怎么理解」。
+# 这一层是「AI 解读数据」的依据，没有它，解释只能靠模型编。
+
+metrics:
+  gmv:
+    business_meaning: 已支付订单的商品成交金额。不含运费、不含税、不含退款金额。
+    owner: 交易数据组
+    updated_at: "2026-03-12"
+    tags: [核心, 经营]
+    interpretation:
+      - 月末和月中（15~17 号）通常有促销，GMV 出现明显峰值属正常。
+      - 周六日成交额平均比工作日高 30% 左右。
+      - 同比下滑但订单量持平，通常意味着客单价在降。
+    faq:
+      - q: 为什么和财务口径对不上？
+        a: 财务口径含运费与税，且按开票确认收入；本指标按支付成功确认，两者天然有差异。
+      - q: 退款订单算不算？
+        a: 不算。GMV 只统计 status='paid'，退款订单单独由 refund_gmv 统计。
+    history:
+      - date: "2026-03-12"
+        change: 口径从「含运费」调整为「不含运费」，历史数据已重刷
+        by: 张国强
+      - date: "2025-11-01"
+        change: 新增 status 过滤条件，排除已取消订单
+        by: 张国强
+
+  order_cnt:
+    business_meaning: 支付成功的订单数，按订单号去重。一笔订单含多件商品只算 1 单。
+    owner: 交易数据组
+    updated_at: "2025-11-01"
+    interpretation:
+      - 与 GMV 同步波动；若订单量涨但 GMV 不涨，说明在卖低价商品。
+    faq:
+      - q: 为什么订单量比订单明细表行数少？
+        a: 本指标按 order_id 去重，明细表是一行一件商品，一单多件会出现多行。
+
+  buyer_cnt:
+    business_meaning: 有支付成功订单的去重买家数。
+    owner: 交易数据组
+    updated_at: "2025-11-01"
+    interpretation:
+      - 买家数增长慢于订单量，说明复购在提升。
+
+  refund_gmv:
+    business_meaning: 发生退款的订单金额（含已退款和已支付后部分退款）。
+    owner: 售后数据组
+    updated_at: "2026-01-08"
+    interpretation:
+      - 退款金额受大促后集中退货影响，通常滞后成交 7~15 天。
+
+  item_qty:
+    business_meaning: 支付成功订单的商品件数合计。
+    owner: 交易数据组
+    updated_at: "2025-11-01"
+
+  aov:
+    business_meaning: 客单价 = GMV ÷ 订单量，表示平均每笔订单的成交金额。
+    owner: 交易数据组
+    updated_at: "2026-03-12"
+    interpretation:
+      - 客单价下降常伴随促销力度加大或低价商品占比提升。
+      - 客单价上涨但订单量下降，可能是提价导致的需求收缩。
+    faq:
+      - q: 客单价和「人均消费」有什么区别？
+        a: 客单价按订单均摊（GMV/订单数），人均消费按买家均摊（GMV/买家数），后者即 arpu。
+
+  arpu:
+    business_meaning: 客单用户价值 = GMV ÷ 买家数，即平均每个成交用户贡献的金额。
+    owner: 交易数据组
+    updated_at: "2026-03-12"
+    interpretation:
+      - arpu 上升可能来自客单价或复购率任一提升，需结合两者拆解。
+
+  refund_rate:
+    business_meaning: 退款率 = 退款金额 ÷ GMV，反映成交金额中被退回的比例。
+    owner: 售后数据组
+    updated_at: "2026-01-08"
+    interpretation:
+      - 正常区间 2%~5%，超过 8% 需排查商品质量或描述不符问题。
+      - 大促后 7~15 天会出现高峰，属于正常滞后效应。
+    faq:
+      - q: 为什么退款率会超过 100%？
+        a: 不会。分子分母都按支付口径计算；若出现异常值，通常是退款金额挂着历史订单导致，需检查口径版本。
+
+  avg_qty_per_order:
+    business_meaning: 件单价 = 销量 ÷ 订单量，即平均每单买几件。
+    owner: 交易数据组
+    updated_at: "2025-11-01"
+
+dimensions:
+  region:
+    business_meaning: 用户注册时填写的省份，归入七大区。与收货地址可能不一致。
+    owner: 用户数据组
+    caveat: 出差/异地收货场景下，地区归因可能失真。
+
+  channel:
+    business_meaning: 订单的首次来源渠道，按归因规则判定（首次点击优先）。
+    owner: 增长数据组
+    caveat: 跨设备行为无法归因，会落入「自然流量」。
+
+  is_new_user:
+    business_meaning: 该用户在本平台是否首次支付成功。
+    owner: 用户数据组
+    caveat: 只统计支付成功，未支付注册用户不计入新客。
+
+glossary:
+  - term: 新客
+    definition: 首次支付成功的用户；同一手机号视为同一人。
+  - term: 大促
+    definition: 每月 15~17 号及双 11、618 等平台活动期。
+  - term: 归因
+    definition: 用户下单前最后一次有效点击的来源渠道。

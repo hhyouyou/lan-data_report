@@ -1,0 +1,171 @@
+version: 1
+version_label: v1
+name: ecommerce
+title: 电商交易域
+description: 订单、商品、渠道相关的核心经营指标
+source: demo
+data_nature: demo
+data_note: seed.py 合成的演示电商数据（约 7 万订单），非真实业务数据
+
+# P0 用本地 SQLite；换 MySQL/DuckDB 只改适配层
+datasource: local_sqlite
+fact_table: fact_order
+fact_alias: f
+
+joins:
+  - table: dim_user
+    alias: u
+    type: left
+    on: "f.user_id = u.user_id"
+  - table: dim_product
+    alias: p
+    type: left
+    on: "f.product_id = p.product_id"
+
+dimensions:
+  - name: order_date
+    title: 下单日期
+    type: time
+    column: f.paid_at
+    granularities: [day, week, month, quarter, year]
+    synonyms: [日期, 下单时间, 支付时间]
+
+  - name: channel
+    title: 渠道
+    type: string
+    column: f.channel
+    synonyms: [渠道, 来源, 流量来源]
+    dictionary: [直播, 搜索, 推荐, 自然流量, 广告]
+
+  - name: region
+    title: 地区
+    type: string
+    column: u.province
+    synonyms: [地区, 区域, 省份]
+    dictionary: [华东, 华南, 华北, 华中, 西南, 西北, 东北]
+
+  - name: city
+    title: 城市
+    type: string
+    column: u.city
+    synonyms: [城市, 城市名称]
+
+  - name: category_l1
+    title: 一级品类
+    type: string
+    column: p.category_l1
+    synonyms: [品类, 类目, 一级类目]
+    dictionary: [女装, 男装, 美妆, 数码, 食品, 家居]
+
+  - name: category_l2
+    title: 二级品类
+    type: string
+    column: p.category_l2
+    synonyms: [二级类目, 子品类]
+
+  - name: is_new_user
+    title: 是否新客
+    type: boolean
+    column: f.is_new_user
+    synonyms: [新客, 新用户, 新老客]
+
+  - name: pay_method
+    title: 支付方式
+    type: string
+    column: f.pay_method
+    synonyms: [支付方式, 付款方式]
+    dictionary: [微信, 支付宝, 银行卡, 余额]
+
+metrics:
+  - name: gmv
+    title: GMV
+    type: atomic
+    agg: sum
+    column: f.paid_amount
+    filters:
+      - "f.status = 'paid'"
+    format: currency
+    synonyms: [GMV, 成交额, 销售额, 营收, 交易额, 成交金额]
+
+  - name: order_cnt
+    title: 订单量
+    type: atomic
+    agg: count_distinct
+    column: f.order_id
+    filters:
+      - "f.status = 'paid'"
+    format: integer
+    synonyms: [订单量, 订单数, 单量, 成交单数]
+
+  - name: buyer_cnt
+    title: 买家数
+    type: atomic
+    agg: count_distinct
+    column: f.user_id
+    filters:
+      - "f.status = 'paid'"
+    format: integer
+    synonyms: [买家数, 客户数, 下单人数, 成交用户数]
+
+  - name: refund_gmv
+    title: 退款金额
+    type: atomic
+    agg: sum
+    column: f.refund_amount
+    filters:
+      - "f.status IN ('paid','refunded')"
+    format: currency
+    synonyms: [退款金额, 退款额, 退货金额]
+
+  - name: item_qty
+    title: 销量
+    type: atomic
+    agg: sum
+    column: f.qty
+    filters:
+      - "f.status = 'paid'"
+    format: integer
+    synonyms: [销量, 件数, 商品件数]
+
+  - name: aov
+    title: 客单价
+    type: derived
+    expr: "{gmv} / {order_cnt}"
+    format: currency
+    synonyms: [客单价, 客单, 平均订单金额]
+
+  - name: arpu
+    title: 客单用户价值
+    type: derived
+    expr: "{gmv} / {buyer_cnt}"
+    format: currency
+    synonyms: [用户价值, 人均消费]
+
+  - name: refund_rate
+    title: 退款率
+    type: derived
+    expr: "{refund_gmv} / {gmv}"
+    format: percent
+    synonyms: [退款率, 退货率]
+
+  - name: avg_qty_per_order
+    title: 件单价
+    type: derived
+    expr: "{item_qty} / {order_cnt}"
+    format: number
+    synonyms: [件单价, 每单件数]
+
+synonyms:
+  "上月": "last_month"
+  "上个月": "last_month"
+  "本月": "this_month"
+  "上季度": "last_quarter"
+  "环比": "mom"
+  "同比": "yoy"
+
+rls:
+  - dimension: region
+    apply_to: [u.province]
+    rule: "u.province IN ({{ user.regions }})"
+    when: "user.regions is not empty"
+    description: 区域负责人只能看自己负责的省份

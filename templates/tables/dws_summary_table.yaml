@@ -1,0 +1,26 @@
+id: dws_summary_table
+kind: table
+title: DWS 汇总表
+description: 按主题 + 粒度聚合的汇总表，面向分析场景。
+tags: [dws, 汇总表]
+variables:
+  - { name: domain, label: 数据域, required: true, options: [trade, user, product, marketing, aftersale] }
+  - { name: subject, label: 主题, required: true, example: shop_sales }
+  - { name: grain, label: 粒度, required: false, default: _1d, options: [_1d, _7d, _1m] }
+  - { name: owner, label: 负责人, required: true, example: 交易数据组 }
+body: |
+  table: "dws_{domain}_{subject}{grain}"
+  layer: dws
+  domain: "{domain}"
+  owner: "{owner}"
+  description: "待补充：{subject} 汇总口径"
+  update_freq: 日
+  grain: 日粒度汇总
+  partition: dt
+  columns:
+    - { name: dt, type: date, comment: 统计日期 }
+    - { name: dim_key, type: varchar(64), comment: 聚合维度键 }
+    - { name: gmv_amt, type: decimal(18,2), comment: 成交金额 }
+    - { name: order_cnt, type: bigint, comment: 订单数 }
+    - { name: buyer_cnt, type: bigint, comment: 买家数 }
+    - { name: refund_amt, type: decimal(18,2), comment: 退款金额 }

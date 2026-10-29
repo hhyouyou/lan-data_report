@@ -1,0 +1,267 @@
+# 评测集种子 v1（P0 先用 20 条跑通链路，W4 扩到 50~80 条）
+#
+# 约定：
+#   expected_spec  —— 期望的 QuerySpec（结构化匹配，用于定位错在哪一步）
+#   expected_answer—— 期望答案（数值匹配，容差见 tolerance）
+#   category       —— single_metric | multi_metric | trend | compare | ranking
+#                     | share | ratio | filter | time_range | ambiguous | unanswerable
+#   difficulty     —— easy | medium | hard
+#
+# 运行：python eval/runner.py --suite v1 --model <model>
+
+suite: v1
+semantic_model: ecommerce
+tolerance: 0.01
+
+questions:
+  # ---------------- 单指标 + 时间 ----------------
+  - id: q001
+    question: 上个月 GMV 是多少
+    category: single_metric
+    difficulty: easy
+    expected_spec:
+      metrics: [gmv]
+      filters:
+        - type: time
+          dimension: order_date
+          range: { type: relative, value: last_month }
+    expected_answer: { gmv: 12345678.90 }
+
+  - id: q002
+    question: 昨天的订单量
+    category: single_metric
+    difficulty: easy
+    expected_spec:
+      metrics: [order_cnt]
+      filters:
+        - type: time
+          dimension: order_date
+          range: { type: relative, value: yesterday }
+
+  - id: q003
+    question: 近 30 天销售额多少
+    category: time_range
+    difficulty: easy
+    expected_spec:
+      metrics: [gmv]
+      filters:
+        - type: time
+          dimension: order_date
+          range: { type: relative, value: last_30d }
+
+  # ---------------- 趋势 ----------------
+  - id: q010
+    question: 9 月每天的 GMV 趋势
+    category: trend
+    difficulty: medium
+    expected_spec:
+      metrics: [gmv]
+      dimensions: [order_date]
+      filters:
+        - type: time
+          dimension: order_date
+          range: { type: absolute, start: "2026-09-01", end: "2026-09-30" }
+          grain: day
+    expected_viz: line
+
+  - id: q011
+    question: 今年每个月的成交额走势
+    category: trend
+    difficulty: medium
+    expected_spec:
+      metrics: [gmv]
+      dimensions: [order_date]
+      filters:
+        - type: time
+          dimension: order_date
+          range: { type: relative, value: this_year }
+          grain: month
+
+  # ---------------- 对比 ----------------
+  - id: q020
+    question: 9 月 GMV 跟 8 月比怎么样
+    category: compare
+    difficulty: medium
+    expected_spec:
+      metrics: [gmv]
+      filters:
+        - type: time
+          dimension: order_date
+          range: { type: absolute, start: "2026-09-01", end: "2026-09-30" }
+      compare: { mode: previous_period }
+
+  - id: q021
+    question: 这个月订单量的同比
+    category: compare
+    difficulty: medium
+    expected_spec:
+      metrics: [order_cnt]
+      filters:
+        - type: time
+          dimension: order_date
+          range: { type: relative, value: this_month }
+      compare: { mode: same_period_last_year }
+
+  # ---------------- 过滤 ----------------
+  - id: q030
+    question: 直播渠道的 GMV 是多少
+    category: filter
+    difficulty: medium
+    expected_spec:
+      metrics: [gmv]
+      filters:
+        - type: dimension
+          dimension: channel
+          op: in
+          values: [直播]
+        - type: time
+          dimension: order_date
+          range: { type: relative, value: last_30d }
+
+  - id: q031
+    question: 华东地区 9 月的新客订单量
+    category: filter
+    difficulty: hard
+    expected_spec:
+      metrics: [order_cnt]
+      filters:
+        - type: dimension
+          dimension: region
+          op: in
+          values: [华东]
+        - type: dimension
+          dimension: is_new_user
+          op: eq
+          value: true
+        - type: time
+          dimension: order_date
+          range: { type: absolute, start: "2026-09-01", end: "2026-09-30" }
+
+  # ---------------- 排名 ----------------
+  - id: q040
+    question: 上个月 GMV 最高的 10 个品类
+    category: ranking
+    difficulty: medium
+    expected_spec:
+      metrics: [gmv]
+      dimensions: [category_l1]
+      order_by: [{ by: gmv, dir: desc }]
+      limit: 10
+      filters:
+        - type: time
+          dimension: order_date
+          range: { type: relative, value: last_month }
+
+  - id: q041
+    question: 各个渠道的订单量排名
+    category: ranking
+    difficulty: easy
+    expected_spec:
+      metrics: [order_cnt]
+      dimensions: [channel]
+      order_by: [{ by: order_cnt, dir: desc }]
+
+  # ---------------- 多指标 ----------------
+  - id: q050
+    question: 上个月 GMV、订单量、客单价
+    category: multi_metric
+    difficulty: medium
+    expected_spec:
+      metrics: [gmv, order_cnt, aov]
+      filters:
+        - type: time
+          dimension: order_date
+          range: { type: relative, value: last_month }
+
+  - id: q051
+    question: 9 月各渠道的 GMV 和买家数
+    category: multi_metric
+    difficulty: medium
+    expected_spec:
+      metrics: [gmv, buyer_cnt]
+      dimensions: [channel]
+      filters:
+        - type: time
+          dimension: order_date
+          range: { type: absolute, start: "2026-09-01", end: "2026-09-30" }
+
+  # ---------------- 比率 / 占比 ----------------
+  - id: q060
+    question: 退款率是多少
+    category: ratio
+    difficulty: easy
+    expected_spec:
+      metrics: [refund_rate]
+
+  - id: q061
+    question: 各品类的 GMV 占比
+    category: share
+    difficulty: hard
+    expected_spec:
+      metrics: [gmv]
+      dimensions: [category_l1]
+      viz_hint: pie
+
+  # ---------------- 歧义 / 无法回答 ----------------
+  - id: q070
+    question: 最近业务怎么样
+    category: ambiguous
+    difficulty: hard
+    expected_behavior: clarification
+    note: 应反问「关注哪个指标/时间范围」，不能瞎猜
+
+  - id: q071
+    question: 我们竞品的 GMV 是多少
+    category: unanswerable
+    difficulty: medium
+    expected_behavior: refuse
+    note: 语义模型里没有外部数据，应明确说明无法回答
+
+  - id: q072
+    question: 上个月每个用户的手机号
+    category: unanswerable
+    difficulty: medium
+    expected_behavior: refuse
+    note: PII 字段，且语义模型未开放，应拒绝
+
+  # ---------------- 多轮（runner 需按会话顺序执行） ----------------
+  - id: q080
+    session: s_multi_1
+    question: 9 月 GMV
+    category: multi_metric
+    difficulty: easy
+    expected_spec:
+      metrics: [gmv]
+      filters:
+        - type: time
+          dimension: order_date
+          range: { type: absolute, start: "2026-09-01", end: "2026-09-30" }
+
+  - id: q081
+    session: s_multi_1
+    question: 按地区拆一下
+    category: multi_metric
+    difficulty: medium
+    expected_spec:
+      metrics: [gmv]
+      dimensions: [region]
+      filters:
+        - type: time
+          dimension: order_date
+          range: { type: absolute, start: "2026-09-01", end: "2026-09-30" }
+    note: 应基于上一轮 spec 做 patch，而不是重新理解
+
+  - id: q082
+    session: s_multi_1
+    question: 再换成趋势
+    category: trend
+    difficulty: hard
+    expected_spec:
+      metrics: [gmv]
+      dimensions: [order_date]
+      filters:
+        - type: time
+          dimension: order_date
+          range: { type: absolute, start: "2026-09-01", end: "2026-09-30" }
+          grain: day
+    note: 应识别为「修改维度」的指代，保留 metrics 和 filters

@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+data/*.sqlite
+data/*.duckdb
+data/jsfj/
+data/shot_*.png
+data/dump.html
+_tmp/
+_chrome*/
+.venv/
+node_modules/
+.pytest-meta/
+*.log

@@ -1,0 +1,538 @@
+version: 1
+version_label: jsfj-2025-p1
+name: jsfj
+title: 江苏统计年鉴
+description: 江苏省统计年鉴核心指标（GDP / 人口 / 收入），含 13 个设区市面板
+source: jsfj
+data_nature: real
+data_note: 数据来自《江苏统计年鉴》2020–2025 版，真实统计数据
+
+datasource: local_sqlite
+fact_table: fact_stat
+fact_alias: f
+
+# 年度数据：默认取最新年份，趋势查询不默认加时间过滤
+default_time_range: latest
+default_grain: year
+
+joins: []
+
+dimensions:
+  - name: stat_year
+    title: 年份
+    type: time
+    column: f.year_date
+    granularities: [year]
+    synonyms: [年份, 年度]
+
+  - name: region
+    title: 地区
+    type: string
+    column: f.region_name
+    synonyms: [地区, 城市, 设区市]
+    dictionary: [江苏省, 南京市, 无锡市, 徐州市, 常州市, 苏州市, 南通市,
+                 连云港市, 淮安市, 盐城市, 扬州市, 镇江市, 泰州市, 宿迁市]
+
+  - name: region_group
+    title: 区域
+    type: string
+    column: f.region_group
+    synonyms: [区域]
+    dictionary: [苏南, 苏中, 苏北]
+
+  - name: parent_region
+    title: 所属城市
+    type: string
+    column: f.parent_region
+    synonyms: [所属城市]
+
+  - name: county_tier
+    title: 县域梯队
+    type: string
+    column: f.region_tier
+    synonyms: [梯队, 县域梯队]
+    dictionary: [千亿县, 900-1000亿, 800-900亿, 700-800亿, 700亿以下]
+
+metrics:
+  # ================= 省级 =================
+  - name: gdp
+    title: 地区生产总值
+    type: atomic
+    agg: sum
+    column: f.value
+    filters: ["f.indicator_key = 'gdp'", "f.geo_level = 'province'"]
+    format: number
+    synonyms: [GDP, 生产总值, 江苏GDP]
+
+  - name: gdp_per_capita
+    title: 人均地区生产总值
+    type: atomic
+    agg: sum
+    column: f.value
+    filters: ["f.indicator_key = 'gdp_per_capita'", "f.geo_level = 'province'"]
+    format: number
+    synonyms: [人均GDP]
+
+  - name: gdp_primary
+    title: 第一产业增加值
+    type: atomic
+    agg: sum
+    column: f.value
+    filters: ["f.indicator_key = 'gdp_primary'", "f.geo_level = 'province'"]
+    format: number
+    synonyms: [第一产业, 一产]
+
+  - name: gdp_secondary
+    title: 第二产业增加值
+    type: atomic
+    agg: sum
+    column: f.value
+    filters: ["f.indicator_key = 'gdp_secondary'", "f.geo_level = 'province'"]
+    format: number
+    synonyms: [第二产业, 二产]
+
+  - name: gdp_tertiary
+    title: 第三产业增加值
+    type: atomic
+    agg: sum
+    column: f.value
+    filters: ["f.indicator_key = 'gdp_tertiary'", "f.geo_level = 'province'"]
+    format: number
+    synonyms: [第三产业, 三产]
+
+  - name: gdp_industry
+    title: 工业增加值
+    type: atomic
+    agg: sum
+    column: f.value
+    filters: ["f.indicator_key = 'gdp_industry'", "f.geo_level = 'province'"]
+    format: number
+    synonyms: [工业]
+
+  - name: population_total
+    title: 常住人口
+    type: atomic
+    agg: sum
+    column: f.value
+    filters: ["f.indicator_key = 'population_total'", "f.geo_level = 'province'"]
+    format: number
+    synonyms: [人口, 总人口, 全省人口]
+
+  - name: population_urban
+    title: 城镇人口
+    type: atomic
+    agg: sum
+    column: f.value
+    filters: ["f.indicator_key = 'population_urban'", "f.geo_level = 'province'"]
+    format: number
+    synonyms: [城镇常住人口]
+
+  - name: urbanization_rate
+    title: 城镇化率
+    type: derived
+    expr: "{population_urban} / {population_total}"
+    format: percent
+    synonyms: [常住人口城镇化率, 城镇化]
+
+  - name: income_all
+    title: 全体居民人均可支配收入
+    type: atomic
+    agg: sum
+    column: f.value
+    filters: ["f.indicator_key = 'income_all'", "f.geo_level = 'province'"]
+    format: number
+    synonyms: [人均可支配收入, 居民收入, 全体居民收入]
+
+  - name: income_urban
+    title: 城镇居民人均可支配收入
+    type: atomic
+    agg: sum
+    column: f.value
+    filters: ["f.indicator_key = 'income_urban'", "f.geo_level = 'province'"]
+    format: number
+    synonyms: [城镇居民收入, 城镇收入]
+
+  - name: income_rural
+    title: 农村居民人均可支配收入
+    type: atomic
+    agg: sum
+    column: f.value
+    filters: ["f.indicator_key = 'income_rural'", "f.geo_level = 'province'"]
+    format: number
+    synonyms: [农村居民收入, 农村收入]
+
+  # ================= 13 市 =================
+  - name: gdp_city
+    title: 各市地区生产总值
+    type: atomic
+    agg: sum
+    column: f.value
+    filters: ["f.indicator_key = 'gdp'", "f.geo_level = 'city'"]
+    format: number
+    synonyms: [各市GDP, 城市GDP, 分市GDP, 各市生产总值]
+
+  - name: gdp_per_capita_city
+    title: 各市人均地区生产总值
+    type: derived
+    expr: "{gdp_city} * 10000 / {population_total_city}"
+    format: number
+    synonyms: [各市人均GDP, 城市人均GDP]
+
+  - name: gdp_secondary_city
+    title: 各市第二产业增加值
+    type: atomic
+    agg: sum
+    column: f.value
+    filters: ["f.indicator_key = 'gdp_secondary'", "f.geo_level = 'city'"]
+    format: number
+    synonyms: [各市第二产业]
+
+  - name: gdp_tertiary_city
+    title: 各市第三产业增加值
+    type: atomic
+    agg: sum
+    column: f.value
+    filters: ["f.indicator_key = 'gdp_tertiary'", "f.geo_level = 'city'"]
+    format: number
+    synonyms: [各市第三产业]
+
+  - name: population_total_city
+    title: 各市常住人口
+    type: atomic
+    agg: sum
+    column: f.value
+    filters: ["f.indicator_key = 'population_total'", "f.geo_level = 'city'"]
+    format: number
+    synonyms: [各市人口, 城市人口]
+
+  - name: population_urban_city
+    title: 各市城镇人口
+    type: atomic
+    agg: sum
+    column: f.value
+    filters: ["f.indicator_key = 'population_urban'", "f.geo_level = 'city'"]
+    format: number
+    synonyms: [各市城镇人口]
+
+  - name: urbanization_rate_city
+    title: 各市城镇化率
+    type: derived
+    expr: "{population_urban_city} / {population_total_city}"
+    format: percent
+    synonyms: [各市城镇化]
+
+  - name: income_urban_city
+    title: 各市城镇居民人均可支配收入
+    type: atomic
+    agg: avg
+    column: f.value
+    filters: ["f.indicator_key = 'income_urban'", "f.geo_level = 'city'"]
+    format: number
+    synonyms: [各市城镇居民收入]
+
+  - name: income_rural_city
+    title: 各市农村居民人均可支配收入
+    type: atomic
+    agg: avg
+    column: f.value
+    filters: ["f.indicator_key = 'income_rural'", "f.geo_level = 'city'"]
+    format: number
+    synonyms: [各市农村居民收入]
+
+  - name: income_all_city
+    title: 各市全体居民人均可支配收入
+    type: atomic
+    agg: avg
+    column: f.value
+    filters: ["f.indicator_key = 'income_all'", "f.geo_level = 'city'"]
+    format: number
+    synonyms: [各市居民收入]
+
+  # ================= 县 / 县级市（地图下钻） =================
+  - name: gdp_county
+    title: 县市/市区地区生产总值
+    type: atomic
+    agg: sum
+    column: f.value
+    filters: ["f.indicator_key = 'gdp'", "f.geo_level = 'county'"]
+    format: number
+    synonyms: [县域GDP, 县市GDP, 市区GDP]
+
+  - name: gdp_per_capita_county
+    title: 县市/市区人均地区生产总值
+    type: atomic
+    agg: sum
+    column: f.value
+    filters: ["f.indicator_key = 'gdp_per_capita'", "f.geo_level = 'county'"]
+    format: number
+    synonyms: [县域人均GDP]
+
+  - name: population_total_county
+    title: 县市/市区常住人口
+    type: atomic
+    agg: sum
+    column: f.value
+    filters: ["f.indicator_key = 'population_total'", "f.geo_level = 'county'"]
+    format: number
+    synonyms: [县域人口]
+
+  - name: income_all_county
+    title: 县市/市区居民人均可支配收入
+    type: atomic
+    agg: avg
+    column: f.value
+    filters: ["f.indicator_key = 'income_all'", "f.geo_level = 'county'"]
+    format: number
+    synonyms: [县域收入]
+
+  # ================= 县域专题（不含市区） =================
+  - name: gdp_county_only
+    title: 县域地区生产总值
+    type: atomic
+    agg: sum
+    column: f.value
+    filters: ["f.indicator_key = 'gdp'", "f.geo_level = 'county'",
+              "f.region_name NOT LIKE '%市区'"]
+    format: number
+    synonyms: [县域GDP合计, 县市GDP合计]
+
+  - name: population_county_only
+    title: 县域常住人口
+    type: atomic
+    agg: sum
+    column: f.value
+    filters: ["f.indicator_key = 'population_total'", "f.geo_level = 'county'",
+              "f.region_name NOT LIKE '%市区'"]
+    format: number
+    synonyms: [县域人口合计]
+
+  - name: county_count
+    title: 县市数量
+    type: atomic
+    agg: count_distinct
+    column: f.region_name
+    filters: ["f.geo_level = 'county'", "f.region_name NOT LIKE '%市区'"]
+    format: integer
+    synonyms: [县市个数]
+
+  - name: county_count_1000
+    title: 千亿县数量
+    type: atomic
+    agg: count_distinct
+    column: f.region_name
+    filters: ["f.indicator_key = 'gdp'", "f.geo_level = 'county'",
+              "f.region_name NOT LIKE '%市区'", "f.value >= 1000"]
+    format: integer
+    synonyms: [千亿县个数]
+
+  - name: county_gdp_avg
+    title: 县域平均GDP
+    type: atomic
+    agg: avg
+    column: f.value
+    filters: ["f.indicator_key = 'gdp'", "f.geo_level = 'county'",
+              "f.region_name NOT LIKE '%市区'"]
+    format: number
+    synonyms: [县域均值]
+
+  - name: county_gdp_per_capita
+    title: 县域人均GDP
+    type: derived
+    expr: "{gdp_county_only} * 10000 / {population_county_only}"
+    format: number
+    synonyms: [县域人均]
+
+  - name: county_gdp_share
+    title: 县域GDP占全省比重
+    type: derived
+    expr: "{gdp_county_only} / {gdp}"
+    format: percent
+    synonyms: [县域占比]
+
+  - name: income_urban_county
+    title: 县市城镇居民人均可支配收入
+    type: atomic
+    agg: avg
+    column: f.value
+    filters: ["f.indicator_key = 'income_urban'", "f.geo_level = 'county'",
+              "f.region_name NOT LIKE '%市区'"]
+    format: number
+    synonyms: [县域城镇收入]
+
+  - name: income_rural_county
+    title: 县市农村居民人均可支配收入
+    type: atomic
+    agg: avg
+    column: f.value
+    filters: ["f.indicator_key = 'income_rural'", "f.geo_level = 'county'",
+              "f.region_name NOT LIKE '%市区'"]
+    format: number
+    synonyms: [县域农村收入]
+
+  - name: income_ratio_county
+    title: 县域城乡收入比
+    type: derived
+    expr: "{income_urban_county} / {income_rural_county}"
+    format: number
+    synonyms: [县域城乡差距]
+
+  # ================= 投资 / 消费 / 财政 / 电力 =================
+  - name: fixed_investment
+    title: 固定资产投资
+    type: atomic
+    agg: sum
+    column: f.value
+    filters: ["f.indicator_key = 'fixed_investment'", "f.geo_level = 'province'"]
+    format: number
+    synonyms: [固投, 固定资产投资额]
+
+  - name: fixed_investment_growth
+    title: 固定资产投资增速
+    type: atomic
+    agg: sum
+    column: f.value
+    filters: ["f.indicator_key = 'fixed_investment_growth'", "f.geo_level = 'province'"]
+    format: number
+    synonyms: [固投增速]
+
+  - name: industrial_investment_growth
+    title: 工业投资增速
+    type: atomic
+    agg: sum
+    column: f.value
+    filters: ["f.indicator_key = 'industrial_investment_growth'", "f.geo_level = 'province'"]
+    format: number
+    synonyms: [工业投资增长]
+
+  - name: retail_sales
+    title: 社会消费品零售总额
+    type: atomic
+    agg: sum
+    column: f.value
+    filters: ["f.indicator_key = 'retail_sales'", "f.geo_level = 'province'"]
+    format: number
+    synonyms: [社零, 社零总额]
+
+  - name: retail_sales_city
+    title: 各市社会消费品零售总额
+    type: atomic
+    agg: sum
+    column: f.value
+    filters: ["f.indicator_key = 'retail_sales'", "f.geo_level = 'city'"]
+    format: number
+    synonyms: [各市社零]
+
+  - name: fiscal_revenue
+    title: 一般公共预算收入
+    type: atomic
+    agg: sum
+    column: f.value
+    filters: ["f.indicator_key = 'fiscal_revenue'", "f.geo_level = 'province'"]
+    format: number
+    synonyms: [财政收入]
+
+  - name: fiscal_expenditure
+    title: 一般公共预算支出
+    type: atomic
+    agg: sum
+    column: f.value
+    filters: ["f.indicator_key = 'fiscal_expenditure'", "f.geo_level = 'province'"]
+    format: number
+    synonyms: [财政支出]
+
+  - name: fiscal_revenue_city
+    title: 各市一般公共预算收入
+    type: atomic
+    agg: sum
+    column: f.value
+    filters: ["f.indicator_key = 'fiscal_revenue'", "f.geo_level = 'city'"]
+    format: number
+    synonyms: [各市财政收入]
+
+  - name: fiscal_expenditure_city
+    title: 各市一般公共预算支出
+    type: atomic
+    agg: sum
+    column: f.value
+    filters: ["f.indicator_key = 'fiscal_expenditure'", "f.geo_level = 'city'"]
+    format: number
+    synonyms: [各市财政支出]
+
+  - name: fiscal_self_sufficiency_city
+    title: 各市财政自给率
+    type: derived
+    expr: "{fiscal_revenue_city} / {fiscal_expenditure_city}"
+    format: percent
+    synonyms: [财政自给率]
+
+  - name: retail_per_capita_city
+    title: 各市人均社会消费品零售额
+    type: derived
+    expr: "{retail_sales_city} * 10000 / {population_total_city}"
+    format: number
+    synonyms: [人均社零]
+
+  - name: electricity
+    title: 全社会用电量
+    type: atomic
+    agg: sum
+    column: f.value
+    filters: ["f.indicator_key = 'electricity'", "f.geo_level = 'province'"]
+    format: number
+    synonyms: [用电量]
+
+  - name: electricity_city
+    title: 各市全社会用电量
+    type: atomic
+    agg: sum
+    column: f.value
+    filters: ["f.indicator_key = 'electricity'", "f.geo_level = 'city'"]
+    format: number
+    synonyms: [各市用电量]
+
+  - name: industrial_electricity_city
+    title: 各市工业用电量
+    type: atomic
+    agg: sum
+    column: f.value
+    filters: ["f.indicator_key = 'industrial_electricity'", "f.geo_level = 'city'"]
+    format: number
+    synonyms: [各市工业用电]
+
+  - name: realestate_invest_city
+    title: 各市房地产开发投资
+    type: atomic
+    agg: sum
+    column: f.value
+    filters: ["f.indicator_key = 'realestate_invest'", "f.geo_level = 'city'"]
+    format: number
+    synonyms: [各市房地产投资]
+
+  # ================= 派生 =================
+  - name: gdp_secondary_share
+    title: 第二产业占比
+    type: derived
+    expr: "{gdp_secondary} / {gdp}"
+    format: percent
+    synonyms: [二产占比, 工业占比]
+
+  - name: gdp_tertiary_share
+    title: 第三产业占比
+    type: derived
+    expr: "{gdp_tertiary} / {gdp}"
+    format: percent
+    synonyms: [三产占比, 服务业占比]
+
+  - name: income_ratio
+    title: 城乡收入比
+    type: derived
+    expr: "{income_urban} / {income_rural}"
+    format: number
+    synonyms: [城乡收入差距]
+
+  - name: electricity_intensity_city
+    title: 各市单位GDP电耗
+    type: derived
+    expr: "{electricity_city} / {gdp_city}"
+    format: number
+    synonyms: [单位GDP电耗, 电耗强度, 度电产值, 每万元GDP用电量]

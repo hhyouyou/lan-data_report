@@ -1,0 +1,24 @@
+id: dim_table
+kind: table
+title: DIM 维度表
+description: 一致性维度表。跨域复用，全局唯一。
+tags: [dim, 维表]
+variables:
+  - { name: subject, label: 维度主题, required: true, example: user }
+  - { name: owner, label: 负责人, required: true, example: 用户数据组 }
+  - { name: domain, label: 归属数据域, required: true, options: [trade, user, product, marketing, aftersale] }
+body: |
+  table: "dim_{subject}"
+  layer: dim
+  domain: "{domain}"
+  owner: "{owner}"
+  description: "待补充：{subject} 维度定义"
+  update_freq: 日
+  grain: 一行一个维度实体
+  columns:
+    - { name: "{subject}_id", type: bigint, comment: 维度主键 }
+    - { name: "{subject}_name", type: varchar(128), comment: 名称 }
+    - { name: category_l1, type: varchar(64), comment: 一级分类（按需保留） }
+    - { name: category_l2, type: varchar(64), comment: 二级分类（按需保留） }
+    - { name: create_at, type: timestamp, comment: 创建时间 }
+    - { name: update_at, type: timestamp, comment: 更新时间 }

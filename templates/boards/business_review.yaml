@@ -1,0 +1,100 @@
+id: business_review
+kind: dashboard
+title: 经营分析看板
+description: 标准经营分析看板：顶部核心指标卡 + 趋势 + 分类对比，默认基于电商语义模型（GMV / 订单 / 客单价）。可作为新业务看板的起手模板。
+tags: [经营, 模板]
+variables:
+  - { name: title, label: 看板标题, required: true, example: 交易域2026年9月经营分析 }
+  - { name: period, label: 时间范围, required: false, default: last_30d,
+      options: [last_7d, last_30d, this_month, last_month] }
+  - { name: category, label: 分类维度, required: false, default: category_l1,
+      options: [category_l1, category_l2, channel, region] }
+body: |
+  title: "{title}"
+  status: draft
+  version: 1
+  grid: { cols: 12, rowHeight: 72 }
+  filters:
+    - { id: f_date, dimension: order_date, type: date_range, default: "{period}" }
+  cards:
+    - id: c_kpi_gmv
+      title: "GMV（近30天）"
+      spec:
+        metrics: [gmv]
+        filters:
+          - type: time
+            dimension: order_date
+            range: { type: relative, value: "{period}" }
+      visualization: { kind: kpi }
+      layout: { x: 0, y: 0, w: 3, h: 3 }
+
+    - id: c_kpi_order
+      title: "订单量（近30天）"
+      spec:
+        metrics: [order_cnt]
+        filters:
+          - type: time
+            dimension: order_date
+            range: { type: relative, value: "{period}" }
+      visualization: { kind: kpi }
+      layout: { x: 3, y: 0, w: 3, h: 3 }
+
+    - id: c_kpi_aov
+      title: "客单价（近30天）"
+      spec:
+        metrics: [aov]
+        filters:
+          - type: time
+            dimension: order_date
+            range: { type: relative, value: "{period}" }
+      visualization: { kind: kpi }
+      layout: { x: 6, y: 0, w: 3, h: 3 }
+
+    - id: c_trend
+      title: "GMV 趋势"
+      spec:
+        metrics: [gmv]
+        dimensions: [order_date]
+        filters:
+          - type: time
+            dimension: order_date
+            range: { type: relative, value: "{period}" }
+            grain: day
+        order_by: [{ by: order_date, dir: asc }]
+      visualization:
+        kind: line
+        x: order_date
+        y: [gmv]
+      layout: { x: 0, y: 3, w: 12, h: 4 }
+
+    - id: c_category
+      title: "GMV · 品类（近30天）"
+      spec:
+        metrics: [gmv]
+        dimensions: ["{category}"]
+        filters:
+          - type: time
+            dimension: order_date
+            range: { type: relative, value: "{period}" }
+        order_by: [{ by: gmv, dir: desc }]
+        limit: 10
+      visualization:
+        kind: bar
+        y: [gmv]
+      layout: { x: 0, y: 7, w: 6, h: 4 }
+
+    - id: c_channel
+      title: "GMV · 渠道（近30天）"
+      spec:
+        metrics: [gmv]
+        dimensions: [channel]
+        filters:
+          - type: time
+            dimension: order_date
+            range: { type: relative, value: "{period}" }
+        order_by: [{ by: gmv, dir: desc }]
+        limit: 5
+      visualization:
+        kind: bar
+        y: [gmv]
+      layout: { x: 6, y: 7, w: 6, h: 4 }

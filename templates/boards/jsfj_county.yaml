@@ -1,0 +1,90 @@
+id: jsfj_county
+kind: dashboard
+title: 江苏县域经济专题
+description: 县域经济专题：用 2024 年年鉴的 40 个县市（含 13 个市区）看江苏县域的体量、千亿县梯队、苏南/苏中/苏北差距与城乡收入。含 GDP TOP15、城乡收入比与人均 GDP×收入四象限散点。
+tags: [江苏, 县域, 专题]
+variables:
+  - { name: title, label: 看板标题, required: true, example: 江苏县域经济专题 }
+body: |
+  title: "{title}"
+  status: draft
+  version: 1
+  grid: { cols: 12, rowHeight: 78 }
+  filters: []
+  cards:
+    - id: c_kpi_total
+      title: "县域GDP合计（亿元）"
+      spec: { metrics: [gdp_county_only] }
+      visualization: { kind: kpi }
+      layout: { x: 0, y: 0, w: 3, h: 2 }
+
+    - id: c_kpi_qy
+      title: "千亿县数量（个）"
+      spec: { metrics: [county_count_1000] }
+      visualization: { kind: kpi }
+      layout: { x: 3, y: 0, w: 3, h: 2 }
+
+    - id: c_kpi_share
+      title: "县域GDP占全省"
+      spec: { metrics: [county_gdp_share] }
+      visualization: { kind: kpi }
+      layout: { x: 6, y: 0, w: 3, h: 2 }
+
+    - id: c_kpi_pc
+      title: "县域人均GDP（元）"
+      spec: { metrics: [county_gdp_per_capita] }
+      visualization: { kind: kpi }
+      layout: { x: 9, y: 0, w: 3, h: 2 }
+
+    - id: c_tier
+      title: "县域梯队分布（按 2024 年 GDP）"
+      spec:
+        metrics: [county_count]
+        dimensions: [county_tier]
+        filters:
+          - { type: dimension, dimension: county_tier, op: in,
+              value: [千亿县, 900-1000亿, 800-900亿, 700-800亿, 700亿以下] }
+        order_by: [{ by: county_count, dir: desc }]
+      visualization: { kind: bar, y: [county_count] }
+      layout: { x: 0, y: 2, w: 6, h: 5 }
+
+    - id: c_group
+      title: "苏南 / 苏中 / 苏北 县域平均GDP（亿元）"
+      spec:
+        metrics: [county_gdp_avg]
+        dimensions: [region_group]
+        order_by: [{ by: county_gdp_avg, dir: desc }]
+      visualization: { kind: bar, y: [county_gdp_avg] }
+      layout: { x: 6, y: 2, w: 6, h: 5 }
+
+    - id: c_top15
+      title: "县市 GDP 排行 TOP15（亿元）"
+      spec:
+        metrics: [gdp_county_only]
+        dimensions: [region]
+        order_by: [{ by: gdp_county_only, dir: desc }]
+        limit: 15
+      visualization: { kind: bar_h, y: [gdp_county_only] }
+      layout: { x: 0, y: 7, w: 6, h: 8 }
+
+    - id: c_ratio
+      title: "县域城乡收入比 TOP10"
+      spec:
+        metrics: [income_ratio_county]
+        dimensions: [region]
+        order_by: [{ by: income_ratio_county, dir: desc }]
+        limit: 10
+      visualization: { kind: bar_h, y: [income_ratio_county] }
+      layout: { x: 6, y: 7, w: 6, h: 8 }
+
+    - id: c_scatter
+      title: "县域人均GDP × 居民收入（四象限）"
+      spec:
+        metrics: [gdp_per_capita_county, income_all_county]
+        dimensions: [region, parent_region, region_group]
+        filters:
+          - { type: dimension, dimension: county_tier, op: in,
+              value: [千亿县, 900-1000亿, 800-900亿, 700-800亿, 700亿以下] }
+        viz_hint: scatter
+      visualization: { kind: scatter }
+      layout: { x: 0, y: 15, w: 12, h: 7 }

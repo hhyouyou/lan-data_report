@@ -1,0 +1,148 @@
+version: 1
+name: 数仓建模规范
+description: 建模的强制约定。AI 建模前必须加载本规范；产出必须通过 lint 才能提交审批。
+
+## ------------------------------------------------------------------
+## 数仓分层
+## ------------------------------------------------------------------
+warehouse_layers:
+  ods:
+    title: 原始层
+    desc: 与源系统同构，只做类型统一和字段重命名，不做业务加工
+    table_prefix: ods_
+    suffix: ""
+  dim:
+    title: 维度层
+    desc: 一致性维度，跨域复用，全局唯一
+    table_prefix: dim_
+    suffix: ""
+  dwd:
+    title: 明细层
+    desc: 业务过程明细，一行一个业务事件，不做聚合
+    table_prefix: dwd_
+    suffix: _di
+  dws:
+    title: 汇总层
+    desc: 按主题 + 粒度聚合，面向分析场景
+    table_prefix: dws_
+    suffix: _1d
+  ads:
+    title: 应用层
+    desc: 面向具体报表 / 接口，可按需宽表化
+    table_prefix: ads_
+    suffix: ""
+
+## ------------------------------------------------------------------
+## 命名规范
+## ------------------------------------------------------------------
+naming:
+  # 表：层次前缀 + 域 + 主题 + 粒度后缀
+  table_pattern: '^(ods|dim|dwd|dws|ads)_[a-z][a-z0-9_]*$'
+  table_rule: '{layer}_{domain}_{subject}_{suffix}'
+  field_pattern: '^[a-z][a-z0-9_]*$'
+  metric_pattern: '^[a-z][a-z0-9_]*$'
+  dimension_pattern: '^[a-z][a-z0-9_]*$'
+
+  table_suffix:
+    _di: 日增量
+    _df: 日全量
+    _1d: 日粒度汇总
+    _hi: 小时增量
+    _td: 临时表（需在 7 天内清理）
+
+  field_suffix:
+    _id: 标识
+    _amt: 金额
+    _cnt: 数量
+    _rate: 比率
+    _at: 时间戳
+    _name: 名称
+    _flag: 布尔标记
+    _dt: 分区日期
+
+  examples:
+    good:
+      - dwd_trade_order_detail_di
+      - dim_user
+      - dws_trade_shop_sales_1d
+      - ads_trade_gmv_dashboard
+    bad:
+      - order
+      - t_order_1
+      - dwdOrderDetail
+      - Fact_Order_Detail
+
+## ------------------------------------------------------------------
+## 数据域划分
+## ------------------------------------------------------------------
+data_domains:
+  - key: trade
+    title: 交易域
+    desc: 订单、支付、退款、履约
+    owner: 交易数据组
+  - key: user
+    title: 用户域
+    desc: 注册、登录、画像、会员
+    owner: 用户数据组
+  - key: product
+    title: 商品域
+    desc: 商品、类目、库存、价格
+    owner: 商品数据组
+  - key: marketing
+    title: 营销域
+    desc: 活动、优惠券、渠道、投放
+    owner: 增长数据组
+  - key: aftersale
+    title: 售后域
+    desc: 退款、退货、投诉
+    owner: 售后数据组
+
+## ------------------------------------------------------------------
+## 必填元数据
+## ------------------------------------------------------------------
+required_metadata:
+  table: [owner, description, layer, domain, update_freq, grain]
+  metric: [title, format]
+  dimension: [title]
+
+## ------------------------------------------------------------------
+## 标准术语（全局唯一，避免同义不同名）
+## ------------------------------------------------------------------
+keywords:
+  - term: GMV
+    canonical: gmv
+    definition: 已支付订单的商品成交金额，不含运费、不含税、不含退款
+    synonyms: [成交额, 销售额, 营收]
+  - term: 订单量
+    canonical: order_cnt
+    definition: 支付成功的订单数，按订单号去重
+    synonyms: [订单数, 单量]
+  - term: 客单价
+    canonical: aov
+    definition: GMV ÷ 订单量
+    synonyms: [客单, 平均订单金额]
+  - term: 退款率
+    canonical: refund_rate
+    definition: 退款金额 ÷ GMV
+    synonyms: [退货率]
+  - term: 新客
+    canonical: is_new_user
+    definition: 首次支付成功的用户
+    synonyms: [新用户]
+
+## ------------------------------------------------------------------
+## 规则执行级别
+##   error: 阻断提交审批
+##   warn:  仅提示，不阻断
+##   off:   关闭
+## 刚接入时建议从 warn 起步，存量治理完再收紧
+## ------------------------------------------------------------------
+enforcement:
+  table_naming: warn
+  field_naming: warn
+  metric_naming: error
+  dimension_naming: error
+  required_metadata: warn
+  time_dimension: error
+  synonym_uniqueness: warn
+  keyword_consistency: warn

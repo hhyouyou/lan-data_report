@@ -1,0 +1,21 @@
+id: kpi_card
+kind: card
+title: 核心指标卡
+description: 单个核心数字，用于看板顶部。
+tags: [KPI, 指标卡]
+variables:
+  - { name: metric, label: 指标, required: true, example: gmv }
+  - { name: metric_label, label: 指标名称, required: true, example: GMV }
+  - { name: period, label: 时间范围, required: false, default: last_30d, options: [last_7d, last_30d, this_month, last_month] }
+  - { name: width, label: 卡片宽度(栅格), required: false, default: "3" }
+body: |
+  title: "{metric_label}（近30天）"
+  spec:
+    metrics: ["{metric}"]
+    filters:
+      - type: time
+        dimension: order_date
+        range: { type: relative, value: "{period}" }
+  visualization:
+    kind: kpi
+  layout: { x: 0, y: 0, w: {width}, h: 3 }

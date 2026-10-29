@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lan Data Report</title>
+  <link rel="stylesheet" href="/static/style.css?v=20261023b">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">Lan Data Report <span class="tag">v0.1 · 骨架</span></div>
+    <nav class="nav">
+      <button class="nav-btn active" data-view="ask">问数</button>
+      <button class="nav-btn" data-view="data">数据</button>
+      <button class="nav-btn" data-view="sources">数据源</button>
+      <button class="nav-btn" data-view="builder">开发</button>
+      <button class="nav-btn" data-view="dashboards">看板</button>
+      <button class="nav-btn" data-view="approvals">审批</button>
+    </nav>
+    <div class="model-info" id="modelInfo">加载中…</div>
+  </header>
+
+  <main>
+    <!-- ============ 问数 ============ -->
+    <section id="view-ask" class="view active">
+      <div class="ask-box">
+        <input id="question" autocomplete="off"
+               placeholder="用一句话问数据，例如：上个月 GMV 是多少">
+        <button id="askBtn" class="primary">查询</button>
+      </div>
+      <div id="examples" class="chips"></div>
+      <div id="answer" class="answer"></div>
+    </section>
+
+    <!-- ============ 数据 ============ -->
+    <section id="view-data" class="view">
+      <div class="view-head">
+        <h2>数据</h2>
+        <span class="meta" id="tableMeta"></span>
+        <button id="uploadBtn" class="primary">+ 导入 Excel / CSV</button>
+      </div>
+      <div id="tableList" class="dash-list"></div>
+      <div id="tableDetail" class="hidden"></div>
+    </section>
+
+    <!-- ============ 数据源 ============ -->
+    <section id="view-sources" class="view">
+      <div class="view-head">
+        <h2>数据源</h2>
+        <span class="meta" id="sourcesMeta"></span>
+      </div>
+      <div id="sourceList" class="source-grid"></div>
+    </section>
+
+    <!-- ============ 数据开发（对话式） ============ -->
+    <section id="view-builder" class="view">
+      <div class="builder">
+        <div class="builder-main">
+          <div id="builderMessages" class="chat"></div>
+          <div class="ask-box">
+            <input id="builderInput" autocomplete="off"
+                   placeholder="用自然语言开发模型，例如：加一个客单价指标，等于订单金额/订单数量">
+            <button id="builderSend" class="primary">发送</button>
+          </div>
+        </div>
+        <aside class="builder-side">
+          <div class="builder-side-head">
+            <span>模型</span>
+            <span class="spacer"></span>
+            <span id="builderLint" class="badge">—</span>
+          </div>
+          <div id="builderModel" class="panel builder-model"></div>
+          <div class="builder-actions">
+            <button class="ghost" id="builderSave">保存草稿</button>
+            <button class="primary" id="builderActivate">保存并激活</button>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ============ 看板 ============ -->
+    <section id="view-dashboards" class="view">
+      <div class="view-head">
+        <h2>看板</h2>
+        <button id="newDashBtn" class="ghost">+ 新建看板</button>
+        <button id="tplDashBtn" class="ghost">从模板创建</button>
+      </div>
+      <div id="dashList" class="dash-list"></div>
+      <div id="dashDetail" class="hidden"></div>
+    </section>
+
+    <!-- ============ 审批中心 ============ -->
+    <section id="view-approvals" class="view">
+      <div class="view-head">
+        <h2>审批中心</h2>
+        <span class="meta" id="approvalMeta"></span>
+      </div>
+      <div id="approvalList" class="dash-list"></div>
+    </section>
+  </main>
+
+  <!-- 图表悬浮提示 -->
+  <div id="chartTip" class="chart-tip hidden"></div>
+
+  <!-- 卡片详情 / 指标口径 -->
+  <div id="infoModal" class="modal hidden">
+    <div class="modal-card wide">
+      <div class="modal-head">
+        <h3 id="infoTitle"></h3>
+        <button class="ghost" id="infoClose">关闭</button>
+      </div>
+      <div id="infoBody"></div>
+    </div>
+  </div>
+
+  <!-- 从模板创建看板 -->
+  <div id="tplModal" class="modal hidden">
+    <div class="modal-card">
+      <h3>从模板创建看板</h3>
+      <label class="field">
+        <span>模板</span>
+        <select id="tplSelect"></select>
+      </label>
+      <label class="field">
+        <span>看板标题</span>
+        <input id="tplTitle" placeholder="例如：交易域 2026 年 9 月经营分析">
+      </label>
+      <p class="meta">模板会生成一套标准布局（指标卡 + 趋势 + 分类对比），创建后可直接提交审批。</p>
+      <div class="modal-actions">
+        <button class="ghost" id="tplCancel">取消</button>
+        <button class="primary" id="tplConfirm">创建</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 自动生成看板简介 -->
+  <div id="descModal" class="modal hidden">
+    <div class="modal-card desc-card">
+      <div class="modal-head">
+        <h3>生成看板简介</h3>
+        <button class="ghost" id="descClose">关闭</button>
+      </div>
+      <p class="meta" id="descHint">正在根据卡片生成…</p>
+      <textarea id="descText" class="desc-editor" rows="5" placeholder="看板简介"></textarea>
+      <div class="modal-actions">
+        <button class="ghost" id="descRegen">重新生成</button>
+        <button class="ghost" id="descCancel">取消</button>
+        <button class="primary" id="descApply">应用到看板</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 导入数据 -->
+  <div id="uploadModal" class="modal hidden">
+    <div class="modal-card">
+      <h3>导入数据</h3>
+      <label class="field">
+        <span>文件（.xlsx / .xls / .csv）</span>
+        <input id="uploadFile" type="file" accept=".xlsx,.xls,.csv">
+      </label>
+      <label class="field">
+        <span>表名（可选，留空自动生成）</span>
+        <input id="uploadTableName" placeholder="例如 t_sales_2026">
+      </label>
+      <p class="meta">导入后会自动清洗列名、识别日期/布尔列，并可一键生成语义模型草稿。</p>
+      <div class="modal-actions">
+        <button class="ghost" id="uploadCancel">取消</button>
+        <button class="primary" id="uploadConfirm">导入</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 固定到看板 -->
+  <div id="modal" class="modal hidden">
+    <div class="modal-card">
+      <h3>固定到看板</h3>
+      <label class="field">
+        <span>卡片标题</span>
+        <input id="pinTitle">
+      </label>
+      <label class="field">
+        <span>目标看板</span>
+        <select id="pinDashboard"></select>
+      </label>
+      <div class="modal-actions">
+        <button class="ghost" id="pinCancel">取消</button>
+        <button class="primary" id="pinConfirm">固定</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js?v=20261023b"></script>
+  <script src="/static/vendor/echarts.min.js"></script>
+  <script src="/static/charts.js?v=20261023b"></script>
+</body>
+</html>

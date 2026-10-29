@@ -1,0 +1,26 @@
+id: dwd_fact_table
+kind: table
+title: DWD 明细事实表
+description: 一行一个业务事件的明细表。AI 建明细表时从这里起手。
+tags: [dwd, 事实表]
+variables:
+  - { name: domain, label: 数据域, required: true, options: [trade, user, product, marketing, aftersale] }
+  - { name: subject, label: 主题, required: true, example: order_detail }
+  - { name: suffix, label: 更新周期, required: false, default: _di, options: [_di, _df, _hi] }
+  - { name: owner, label: 负责人, required: true, example: 交易数据组 }
+body: |
+  table: "dwd_{domain}_{subject}{suffix}"
+  layer: dwd
+  domain: "{domain}"
+  owner: "{owner}"
+  description: "待补充：{subject} 业务过程说明"
+  update_freq: 日
+  grain: 一行一个业务事件
+  partition: dt
+  columns:
+    - { name: "{subject}_id", type: bigint, comment: 业务主键 }
+    - { name: dt, type: date, comment: 分区日期 }
+    - { name: create_at, type: timestamp, comment: 事件创建时间 }
+    - { name: update_at, type: timestamp, comment: 事件更新时间 }
+    - { name: order_amt, type: decimal(18,2), comment: 金额（按需改名，保持 _amt 后缀） }
+    - { name: status, type: varchar(32), comment: 状态枚举 }

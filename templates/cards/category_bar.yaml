@@ -1,0 +1,29 @@
+id: category_bar
+kind: card
+title: 分类对比柱状图
+description: 按类别维度对比单指标。类别超过 8 个时规范建议改横向条形。
+tags: [对比, bar]
+variables:
+  - { name: metric, label: 指标, required: true, example: gmv }
+  - { name: metric_label, label: 指标名称, required: true, example: GMV }
+  - { name: dimension, label: 分类维度, required: true, example: category_l1,
+      options: [channel, region, category_l1, category_l2, pay_method] }
+  - { name: dimension_label, label: 维度名称, required: false, default: 品类 }
+  - { name: period, label: 时间范围, required: false, default: last_30d }
+  - { name: limit, label: 展示条数, required: false, default: "10" }
+  - { name: width, label: 卡片宽度(栅格), required: false, default: "6" }
+body: |
+  title: "{metric_label} · {dimension_label}（近30天）"
+  spec:
+    metrics: ["{metric}"]
+    dimensions: ["{dimension}"]
+    filters:
+      - type: time
+        dimension: order_date
+        range: { type: relative, value: "{period}" }
+    order_by: [{ by: "{metric}", dir: desc }]
+    limit: {limit}
+  visualization:
+    kind: bar
+    y: ["{metric}"]
+  layout: { x: 0, y: 0, w: {width}, h: 4 }

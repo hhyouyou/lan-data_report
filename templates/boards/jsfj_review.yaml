@@ -1,0 +1,105 @@
+id: jsfj_review
+kind: dashboard
+title: 江苏统计年鉴看板
+description: 江苏经济与民生全景：全省 GDP、人均 GDP、城乡收入与产业结构趋势（1952–2024），叠加 13 市横向对比与县市地图下钻。地图与城市卡片默认展示 2024 年最新数据。
+tags: [江苏, 年鉴, 宏观]
+variables:
+  - { name: title, label: 看板标题, required: true, example: 江苏省经济与民生概览 }
+body: |
+  title: "{title}"
+  status: draft
+  version: 1
+  grid: { cols: 12, rowHeight: 78 }
+  filters: []
+  cards:
+    - id: c_kpi_gdp
+      title: "地区生产总值（亿元）"
+      spec: { metrics: [gdp] }
+      visualization: { kind: kpi }
+      layout: { x: 0, y: 0, w: 3, h: 2 }
+
+    - id: c_kpi_pc
+      title: "人均地区生产总值（元）"
+      spec: { metrics: [gdp_per_capita] }
+      visualization: { kind: kpi }
+      layout: { x: 3, y: 0, w: 3, h: 2 }
+
+    - id: c_kpi_pop
+      title: "常住人口（万人）"
+      spec: { metrics: [population_total] }
+      visualization: { kind: kpi }
+      layout: { x: 6, y: 0, w: 3, h: 2 }
+
+    - id: c_kpi_ratio
+      title: "城乡收入比"
+      spec: { metrics: [income_ratio] }
+      visualization: { kind: kpi }
+      layout: { x: 9, y: 0, w: 3, h: 2 }
+
+    - id: c_gdp_trend
+      title: "地区生产总值趋势（亿元）"
+      spec:
+        metrics: [gdp]
+        dimensions: [stat_year]
+        order_by: [{ by: stat_year, dir: asc }]
+      visualization: { kind: line, x: stat_year, y: [gdp] }
+      layout: { x: 0, y: 2, w: 12, h: 5 }
+
+    - id: c_income
+      title: "城镇 / 农村居民人均可支配收入（元）"
+      spec:
+        metrics: [income_urban, income_rural]
+        dimensions: [stat_year]
+        order_by: [{ by: stat_year, dir: asc }]
+      visualization: { kind: line, x: stat_year, y: [income_urban, income_rural] }
+      layout: { x: 0, y: 7, w: 6, h: 5 }
+
+    - id: c_share
+      title: "第二产业占比趋势"
+      spec:
+        metrics: [gdp_secondary_share]
+        dimensions: [stat_year]
+        order_by: [{ by: stat_year, dir: asc }]
+      visualization: { kind: line, x: stat_year, y: [gdp_secondary_share] }
+      layout: { x: 6, y: 7, w: 6, h: 5 }
+
+    - id: c_map
+      title: "江苏经济地图（各市 / 县市）"
+      spec:
+        metrics: [gdp_city, gdp_per_capita_city, population_total_city, income_all_city]
+        dimensions: [region]
+        viz_hint: map
+      visualization:
+        kind: map
+        drill_metrics: [gdp_county, gdp_per_capita_county, population_total_county, income_all_county]
+        metric_labels: [GDP, 人均GDP, 人口, 收入]
+      layout: { x: 0, y: 12, w: 6, h: 8 }
+
+    - id: c_city_gdp
+      title: "各市 GDP（亿元）"
+      spec:
+        metrics: [gdp_city]
+        dimensions: [region]
+        order_by: [{ by: gdp_city, dir: desc }]
+        limit: 13
+      visualization: { kind: bar_h, y: [gdp_city] }
+      layout: { x: 6, y: 12, w: 6, h: 4 }
+
+    - id: c_city_pc
+      title: "各市人均 GDP（元）"
+      spec:
+        metrics: [gdp_per_capita_city]
+        dimensions: [region]
+        order_by: [{ by: gdp_per_capita_city, dir: desc }]
+        limit: 13
+      visualization: { kind: bar_h, y: [gdp_per_capita_city] }
+      layout: { x: 6, y: 16, w: 6, h: 4 }
+
+    - id: c_region_ur
+      title: "苏南 / 苏中 / 苏北 城镇化率"
+      spec:
+        metrics: [urbanization_rate_city]
+        dimensions: [region_group]
+        order_by: [{ by: urbanization_rate_city, dir: desc }]
+      visualization: { kind: bar, y: [urbanization_rate_city] }
+      layout: { x: 0, y: 20, w: 12, h: 4 }
